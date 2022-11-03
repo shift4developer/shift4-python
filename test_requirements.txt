@@ -1,0 +1,6 @@
+coverage
+mock
+pytest
+python-dotenv
+waiting
+black
