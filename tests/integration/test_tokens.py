@@ -28,7 +28,8 @@ class TestTokens(TestCase):
         )
         charge = api.charges.capture(charge["id"])
         charge = api.charges.refund(charge["id"], {"amount": 1000})
-        assert charge["amount"] == 1000
+        assert charge["amount"] == 2000
+        assert charge["amountRefunded"] == 1000
         assert charge["captured"]
         assert charge["refunded"]
 

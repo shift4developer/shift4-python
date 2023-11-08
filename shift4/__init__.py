@@ -4,7 +4,6 @@ from shift4 import (
     charges,
     checkout_request,
     credits,
-    cross_sale_offers,
     customers,
     disputes,
     events,
@@ -26,7 +25,6 @@ blacklist = blacklist.Blacklist()
 cards = cards.Cards()
 charges = charges.Charges()
 credits = credits.Credits()
-cross_sale_offers = cross_sale_offers.CrossSaleOffers()
 customers = customers.Customers()
 disputes = disputes.Disputes()
 file_uploads = file_uploads.FileUploads()
