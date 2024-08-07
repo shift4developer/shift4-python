@@ -26,4 +26,4 @@ class TestDisputes(TestCase):
         # when
         response = api.events.list({"limit": 100})
         # then
-        self.assertListResponseContainsInAnyOrderById(response, [event])
+        self.assert_list_response_contains_in_any_order_by_id(response, [event])

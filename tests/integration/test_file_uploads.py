@@ -43,4 +43,4 @@ class TestFileUploads(TestCase):
         # when
         response = api.file_uploads.list({"limit": 100})
         #
-        self.assertListResponseContainsInAnyOrderById(response, [uploaded])
+        self.assert_list_response_contains_in_any_order_by_id(response, [uploaded])

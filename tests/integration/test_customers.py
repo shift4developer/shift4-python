@@ -19,18 +19,18 @@ class TestCustomers(TestCase):
     def test_create_without_email(self, api):
         exception = self.assert_shift4_exception(api.customers.create, {})
         assert exception.type == "invalid_request"
-        assert exception.code == None
+        assert exception.code is None
         assert exception.message == "email: Must not be empty."
-        assert exception.charge_id == None
-        assert exception.blacklist_rule_id == None
+        assert exception.charge_id is None
+        assert exception.blacklist_rule_id is None
 
     def test_get_with_invalid_id(self, api):
         exception = self.assert_shift4_exception(api.customers.get, "1")
         assert exception.type == "invalid_request"
-        assert exception.code == None
+        assert exception.code is None
         assert exception.message == "Customer '1' does not exist"
-        assert exception.charge_id == None
-        assert exception.blacklist_rule_id == None
+        assert exception.charge_id is None
+        assert exception.blacklist_rule_id is None
 
     def test_delete(self, api):
         # given

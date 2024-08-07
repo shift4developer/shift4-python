@@ -2,8 +2,8 @@ from shift4.resource import Resource
 
 
 class PaymentMethods(Resource):
-    def create(self, params):
-        return self._post("/payment-methods", params)
+    def create(self, params, request_options=None):
+        return self._post("/payment-methods", params, request_options=request_options)
 
     def get(self, payment_method_id):
         return self._get("/payment-methods/%s" % payment_method_id)
