@@ -70,6 +70,6 @@ class Resource(object):
             sys.version_info.micro,
         )
         headers = {"User-Agent": user_agent}
-        if request_options is not None and request_options.has_idempotency_key():
-            headers["Idempotency-Key"] = request_options.get_idempotency_key()
+        if request_options is not None and "idempotency_key" in request_options:
+            headers["Idempotency-Key"] = request_options["idempotency_key"]
         return headers

@@ -1,4 +1,3 @@
-from shift4.request_options import RequestOptions
 from . import random_email, random_string
 from .data.cards import valid_card_req
 from .testcase import TestCase
@@ -98,15 +97,18 @@ class TestCards(TestCase):
             "cvc": "123",
             "cardholderName": (random_string()),
         }
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
+        idempotency_key = random_string()
 
         # when
         first_call_response = api.cards.create(
-            customer["id"], card_req, request_options=request_options
+            customer["id"],
+            card_req,
+            request_options={"idempotency_key": idempotency_key},
         )
         second_call_response = api.cards.create(
-            customer["id"], card_req, request_options=request_options
+            customer["id"],
+            card_req,
+            request_options={"idempotency_key": idempotency_key},
         )
 
         # then
@@ -116,10 +118,6 @@ class TestCards(TestCase):
         self, api
     ):
         # given
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
-        other_request_options = RequestOptions()
-        other_request_options.set_idempotency_key(random_string())
         customer = api.customers.create({"email": random_email()})
         card_req = {
             "number": "4242424242424242",
@@ -131,10 +129,14 @@ class TestCards(TestCase):
 
         # when
         first_call_response = api.cards.create(
-            customer["id"], card_req, request_options=request_options
+            customer["id"],
+            card_req,
+            request_options={"idempotency_key": random_string()},
         )
         second_call_response = api.cards.create(
-            customer["id"], card_req, request_options=other_request_options
+            customer["id"],
+            card_req,
+            request_options={"idempotency_key": random_string()},
         )
 
         # then
@@ -170,14 +172,20 @@ class TestCards(TestCase):
             "cvc": "123",
             "cardholderName": (random_string()),
         }
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
+        idempotency_key = random_string()
 
         # when
-        api.cards.create(customer["id"], card_req, request_options=request_options)
+        api.cards.create(
+            customer["id"],
+            card_req,
+            request_options={"idempotency_key": idempotency_key},
+        )
         card_req["cvc"] = "042"
         exception = self.assert_shift4_exception(
-            api.cards.create, customer["id"], card_req, request_options=request_options
+            api.cards.create,
+            customer["id"],
+            card_req,
+            request_options={"idempotency_key": idempotency_key},
         )
 
         # then
@@ -192,8 +200,7 @@ class TestCards(TestCase):
         self, api
     ):
         # given
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
+        idempotency_key = random_string()
         customer = api.customers.create({"email": random_email()})
         created = api.cards.create(customer["id"], valid_card_req())
 
@@ -214,7 +221,7 @@ class TestCards(TestCase):
             created["customerId"],
             created["id"],
             update_request,
-            request_options=request_options,
+            request_options={"idempotency_key": idempotency_key},
         )
         update_request["expMonth"] = "06"
         exception = self.assert_shift4_exception(
@@ -222,7 +229,7 @@ class TestCards(TestCase):
             created["customerId"],
             created["id"],
             update_request,
-            request_options=request_options,
+            request_options={"idempotency_key": idempotency_key},
         )
 
         # then

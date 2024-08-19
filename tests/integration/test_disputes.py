@@ -1,6 +1,5 @@
 from waiting import wait
 
-from shift4.request_options import RequestOptions
 from . import random_string
 from .data.cards import disputed_card_req
 from .data.charges import valid_charge_req
@@ -62,21 +61,20 @@ class TestDisputes(TestCase):
         self, api
     ):
         # given
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
+        idempotency_key = random_string()
         [dispute, _] = create_dispute(api)
         evidence_customer_name = "Test Customer"
         # when
         api.disputes.update(
             dispute["id"],
             {"evidence": {"customerName": evidence_customer_name}},
-            request_options=request_options,
+            request_options={"idempotency_key": idempotency_key},
         )
         exception = self.assert_shift4_exception(
             api.disputes.update,
             dispute["id"],
             {"evidence": {"customerName": "other name"}},
-            request_options=request_options,
+            request_options={"idempotency_key": idempotency_key},
         )
 
         # then

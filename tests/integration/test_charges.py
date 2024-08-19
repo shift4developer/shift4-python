@@ -1,4 +1,3 @@
-from shift4.request_options import RequestOptions
 from . import random_string
 from .data.charges import valid_charge_req
 from .data.customers import valid_customer_req
@@ -92,16 +91,17 @@ class TestCharges(TestCase):
 
     def test_will_not_create_duplicate_if_same_idempotency_key_is_used(self, api):
         # given
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
+        idempotency_key = random_string()
         charge_req = valid_charge_req()
 
         # when
         first_call_response = api.charges.create(
-            charge_req, request_options=request_options
+            charge_req,
+            request_options={"idempotency_key": idempotency_key},
         )
         second_call_response = api.charges.create(
-            charge_req, request_options=request_options
+            charge_req,
+            request_options={"idempotency_key": idempotency_key},
         )
 
         # then
@@ -111,18 +111,16 @@ class TestCharges(TestCase):
         self, api
     ):
         # given
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
-        other_request_options = RequestOptions()
-        other_request_options.set_idempotency_key(random_string())
         charge_req = valid_charge_req()
 
         # when
         first_call_response = api.charges.create(
-            charge_req, request_options=request_options
+            charge_req,
+            request_options={"idempotency_key": random_string()},
         )
         second_call_response = api.charges.create(
-            charge_req, request_options=other_request_options
+            charge_req,
+            request_options={"idempotency_key": random_string()},
         )
 
         # then
@@ -143,15 +141,19 @@ class TestCharges(TestCase):
         self, api
     ):
         # given
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
+        idempotency_key = random_string()
         charge_req = valid_charge_req()
 
         # when
-        api.charges.create(charge_req, request_options=request_options)
+        api.charges.create(
+            charge_req,
+            request_options={"idempotency_key": idempotency_key},
+        )
         charge_req["amount"] = "42"
         exception = self.assert_shift4_exception(
-            api.charges.create, charge_req, request_options=request_options
+            api.charges.create,
+            charge_req,
+            request_options={"idempotency_key": idempotency_key},
         )
 
         # then
@@ -166,8 +168,7 @@ class TestCharges(TestCase):
         self, api
     ):
         # given
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
+        idempotency_key = random_string()
         charge_req = valid_charge_req()
         created = api.charges.create(charge_req)
         update_request_params = {
@@ -177,14 +178,16 @@ class TestCharges(TestCase):
 
         # when
         api.charges.update(
-            created["id"], update_request_params, request_options=request_options
+            created["id"],
+            update_request_params,
+            request_options={"idempotency_key": idempotency_key},
         )
         update_request_params["description"] = "other description"
         exception = self.assert_shift4_exception(
             api.charges.update,
             created["id"],
             update_request_params,
-            request_options=request_options,
+            request_options={"idempotency_key": idempotency_key},
         )
 
         # then

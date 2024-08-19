@@ -1,4 +1,3 @@
-from shift4.request_options import RequestOptions
 from . import random_string
 from .data.customers import valid_customer_req
 from .data.payment_methods import payment_method
@@ -52,16 +51,17 @@ class TestPlans(TestCase):
 
     def test_will_not_create_duplicate_if_same_idempotency_key_is_used(self, api):
         # given
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
+        idempotency_key = random_string()
         payment_method_req = payment_method()
 
         # when
         first_call_response = api.payment_methods.create(
-            payment_method_req, request_options=request_options
+            payment_method_req,
+            request_options={"idempotency_key": idempotency_key},
         )
         second_call_response = api.payment_methods.create(
-            payment_method_req, request_options=request_options
+            payment_method_req,
+            request_options={"idempotency_key": idempotency_key},
         )
 
         # then
@@ -71,18 +71,16 @@ class TestPlans(TestCase):
         self, api
     ):
         # given
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
-        other_request_options = RequestOptions()
-        other_request_options.set_idempotency_key(random_string())
         payment_method_req = payment_method()
 
         # when
         first_call_response = api.payment_methods.create(
-            payment_method_req, request_options=request_options
+            payment_method_req,
+            request_options={"idempotency_key": random_string()},
         )
         second_call_response = api.payment_methods.create(
-            payment_method_req, request_options=other_request_options
+            payment_method_req,
+            request_options={"idempotency_key": random_string()},
         )
 
         # then
@@ -103,17 +101,19 @@ class TestPlans(TestCase):
         self, api
     ):
         # given
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
+        idempotency_key = random_string()
         payment_method_req = payment_method()
 
         # when
-        api.payment_methods.create(payment_method_req, request_options=request_options)
+        api.payment_methods.create(
+            payment_method_req,
+            request_options={"idempotency_key": idempotency_key},
+        )
         payment_method_req["type"] = "apple_pay"
         exception = self.assert_shift4_exception(
             api.payment_methods.create,
             payment_method_req,
-            request_options=request_options,
+            request_options={"idempotency_key": idempotency_key},
         )
 
         # then

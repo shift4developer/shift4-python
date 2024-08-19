@@ -1,4 +1,3 @@
-from shift4.request_options import RequestOptions
 from . import random_email, random_string
 from .data.cards import valid_card_req
 from .data.plans import one_week_plan_req
@@ -70,8 +69,7 @@ class TestSubscriptions(TestCase):
 
     def test_will_not_create_duplicate_if_same_idempotency_key_is_used(self, api):
         # given
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
+        idempotency_key = random_string()
         customer = api.customers.create(
             {"email": random_email(), "card": valid_card_req()}
         )
@@ -82,10 +80,12 @@ class TestSubscriptions(TestCase):
 
         # when
         first_call_response = api.subscriptions.create(
-            subscription_request, request_options=request_options
+            subscription_request,
+            request_options={"idempotency_key": idempotency_key},
         )
         second_call_response = api.subscriptions.create(
-            subscription_request, request_options=request_options
+            subscription_request,
+            request_options={"idempotency_key": idempotency_key},
         )
 
         # then
@@ -95,10 +95,6 @@ class TestSubscriptions(TestCase):
         self, api
     ):
         # given
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
-        other_request_options = RequestOptions()
-        other_request_options.set_idempotency_key(random_string())
         customer = api.customers.create(
             {"email": random_email(), "card": valid_card_req()}
         )
@@ -109,10 +105,12 @@ class TestSubscriptions(TestCase):
 
         # when
         first_call_response = api.subscriptions.create(
-            subscription_request, request_options=request_options
+            subscription_request,
+            request_options={"idempotency_key": random_string()},
         )
         second_call_response = api.subscriptions.create(
-            subscription_request, request_options=other_request_options
+            subscription_request,
+            request_options={"idempotency_key": random_string()},
         )
 
         # then
@@ -139,8 +137,7 @@ class TestSubscriptions(TestCase):
         self, api
     ):
         # given
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
+        idempotency_key = random_string()
         customer = api.customers.create(
             {"email": random_email(), "card": valid_card_req()}
         )
@@ -150,12 +147,15 @@ class TestSubscriptions(TestCase):
         )
 
         # when
-        api.subscriptions.create(subscription_request, request_options=request_options)
+        api.subscriptions.create(
+            subscription_request,
+            request_options={"idempotency_key": idempotency_key},
+        )
         subscription_request["planId"] = "42"
         exception = self.assert_shift4_exception(
             api.subscriptions.create,
             subscription_request,
-            request_options=request_options,
+            request_options={"idempotency_key": idempotency_key},
         )
 
         # then
@@ -179,8 +179,7 @@ class TestSubscriptions(TestCase):
         )
         created = api.subscriptions.create(subscription_request)
 
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
+        idempotency_key = random_string()
         update_request_params = {
             "shipping": {
                 "name": "Updated shipping",
@@ -197,14 +196,16 @@ class TestSubscriptions(TestCase):
 
         # when
         api.subscriptions.update(
-            created["id"], update_request_params, request_options=request_options
+            created["id"],
+            update_request_params,
+            request_options={"idempotency_key": idempotency_key},
         )
         update_request_params["shipping"]["name"] = "different name"
         exception = self.assert_shift4_exception(
             api.subscriptions.update,
             created["id"],
             update_request_params,
-            request_options=request_options,
+            request_options={"idempotency_key": idempotency_key},
         )
 
         # then

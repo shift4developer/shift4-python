@@ -1,4 +1,3 @@
-from shift4.request_options import RequestOptions
 from . import random_string
 from .data.credits import valid_credit_req
 from .data.customers import valid_customer_req
@@ -68,16 +67,17 @@ class TestCredits(TestCase):
 
     def test_will_not_create_duplicate_if_same_idempotency_key_is_used(self, api):
         # given
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
+        idempotency_key = random_string()
         credit_req = valid_credit_req()
 
         # when
         first_call_response = api.credits.create(
-            credit_req, request_options=request_options
+            credit_req,
+            request_options={"idempotency_key": idempotency_key},
         )
         second_call_response = api.credits.create(
-            credit_req, request_options=request_options
+            credit_req,
+            request_options={"idempotency_key": idempotency_key},
         )
 
         # then
@@ -87,18 +87,16 @@ class TestCredits(TestCase):
         self, api
     ):
         # given
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
-        other_request_options = RequestOptions()
-        other_request_options.set_idempotency_key(random_string())
         credit_req = valid_credit_req()
 
         # when
         first_call_response = api.credits.create(
-            credit_req, request_options=request_options
+            credit_req,
+            request_options={"idempotency_key": random_string()},
         )
         second_call_response = api.credits.create(
-            credit_req, request_options=other_request_options
+            credit_req,
+            request_options={"idempotency_key": random_string()},
         )
 
         # then
@@ -119,15 +117,19 @@ class TestCredits(TestCase):
         self, api
     ):
         # given
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
+        idempotency_key = random_string()
         credit_req = valid_credit_req()
 
         # when
-        api.credits.create(credit_req, request_options=request_options)
+        api.credits.create(
+            credit_req,
+            request_options={"idempotency_key": idempotency_key},
+        )
         credit_req["amount"] = "42"
         exception = self.assert_shift4_exception(
-            api.credits.create, credit_req, request_options=request_options
+            api.credits.create,
+            credit_req,
+            request_options={"idempotency_key": idempotency_key},
         )
 
         # then
@@ -142,8 +144,7 @@ class TestCredits(TestCase):
         self, api
     ):
         # given
-        request_options = RequestOptions()
-        request_options.set_idempotency_key(random_string())
+        idempotency_key = random_string()
         credit_req = valid_credit_req()
         created = api.credits.create(credit_req)
         update_request_params = {
@@ -153,14 +154,16 @@ class TestCredits(TestCase):
 
         # when
         api.credits.update(
-            created["id"], update_request_params, request_options=request_options
+            created["id"],
+            update_request_params,
+            request_options={"idempotency_key": idempotency_key},
         )
         update_request_params["description"] = "other description"
         exception = self.assert_shift4_exception(
             api.credits.update,
             created["id"],
             update_request_params,
-            request_options=request_options,
+            request_options={"idempotency_key": idempotency_key},
         )
 
         # then
