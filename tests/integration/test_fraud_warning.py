@@ -36,4 +36,4 @@ class TestFraudWarning(TestCase):
         # when
         response = api.fraud_warnings.list({"limit": 100})
         # then
-        self.assertListResponseContainsInAnyOrderById(response, [fraud_warning])
+        self.assert_list_response_contains_in_any_order_by_id(response, [fraud_warning])

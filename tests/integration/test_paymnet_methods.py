@@ -1,3 +1,4 @@
+from . import random_string
 from .data.customers import valid_customer_req
 from .data.payment_methods import payment_method
 from .testcase import TestCase
@@ -46,4 +47,79 @@ class TestPlans(TestCase):
         )
         self.assert_list_response_contains_exactly_by_id(
             payment_methods_after_last_id, [payment_method2, payment_method1]
+        )
+
+    def test_will_not_create_duplicate_if_same_idempotency_key_is_used(self, api):
+        # given
+        idempotency_key = random_string()
+        payment_method_req = payment_method()
+
+        # when
+        first_call_response = api.payment_methods.create(
+            payment_method_req,
+            request_options={"idempotency_key": idempotency_key},
+        )
+        second_call_response = api.payment_methods.create(
+            payment_method_req,
+            request_options={"idempotency_key": idempotency_key},
+        )
+
+        # then
+        assert first_call_response == second_call_response
+
+    def test_will_create_two_instances_if_different_idempotency_keys_are_used(
+        self, api
+    ):
+        # given
+        payment_method_req = payment_method()
+
+        # when
+        first_call_response = api.payment_methods.create(
+            payment_method_req,
+            request_options={"idempotency_key": random_string()},
+        )
+        second_call_response = api.payment_methods.create(
+            payment_method_req,
+            request_options={"idempotency_key": random_string()},
+        )
+
+        # then
+        assert first_call_response != second_call_response
+
+    def test_will_create_two_instances_if_no_idempotency_keys_are_used(self, api):
+        # given
+        payment_method_req = payment_method()
+
+        # when
+        first_call_response = api.payment_methods.create(payment_method_req)
+        second_call_response = api.payment_methods.create(payment_method_req)
+
+        # then
+        assert first_call_response != second_call_response
+
+    def test_will_throw_exception_if_same_idempotency_key_is_used_for_two_different_create_requests(
+        self, api
+    ):
+        # given
+        idempotency_key = random_string()
+        payment_method_req = payment_method()
+
+        # when
+        api.payment_methods.create(
+            payment_method_req,
+            request_options={"idempotency_key": idempotency_key},
+        )
+        payment_method_req["type"] = "apple_pay"
+        exception = self.assert_shift4_exception(
+            api.payment_methods.create,
+            payment_method_req,
+            request_options={"idempotency_key": idempotency_key},
+        )
+
+        # then
+        assert exception.type == "invalid_request"
+        assert exception.code is None
+        assert (
+            exception.message
+            == "Idempotent key used for request with different parameters."
         )

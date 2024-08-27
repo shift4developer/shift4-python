@@ -1,3 +1,4 @@
+from . import random_string
 from .data.credits import valid_credit_req
 from .data.customers import valid_customer_req
 from .testcase import TestCase
@@ -62,4 +63,113 @@ class TestCredits(TestCase):
         )
         self.assert_list_response_contains_exactly_by_id(
             credits_after_last_id, [credit2, credit1]
+        )
+
+    def test_will_not_create_duplicate_if_same_idempotency_key_is_used(self, api):
+        # given
+        idempotency_key = random_string()
+        credit_req = valid_credit_req()
+
+        # when
+        first_call_response = api.credits.create(
+            credit_req,
+            request_options={"idempotency_key": idempotency_key},
+        )
+        second_call_response = api.credits.create(
+            credit_req,
+            request_options={"idempotency_key": idempotency_key},
+        )
+
+        # then
+        assert first_call_response == second_call_response
+
+    def test_will_create_two_instances_if_different_idempotency_keys_are_used(
+        self, api
+    ):
+        # given
+        credit_req = valid_credit_req()
+
+        # when
+        first_call_response = api.credits.create(
+            credit_req,
+            request_options={"idempotency_key": random_string()},
+        )
+        second_call_response = api.credits.create(
+            credit_req,
+            request_options={"idempotency_key": random_string()},
+        )
+
+        # then
+        assert first_call_response != second_call_response
+
+    def test_will_create_two_instances_if_no_idempotency_keys_are_used(self, api):
+        # given
+        credit_req = valid_credit_req()
+
+        # when
+        first_call_response = api.credits.create(credit_req)
+        second_call_response = api.credits.create(credit_req)
+
+        # then
+        assert first_call_response != second_call_response
+
+    def test_will_throw_exception_if_same_idempotency_key_is_used_for_two_different_create_requests(
+        self, api
+    ):
+        # given
+        idempotency_key = random_string()
+        credit_req = valid_credit_req()
+
+        # when
+        api.credits.create(
+            credit_req,
+            request_options={"idempotency_key": idempotency_key},
+        )
+        credit_req["amount"] = "42"
+        exception = self.assert_shift4_exception(
+            api.credits.create,
+            credit_req,
+            request_options={"idempotency_key": idempotency_key},
+        )
+
+        # then
+        assert exception.type == "invalid_request"
+        assert exception.code is None
+        assert (
+            exception.message
+            == "Idempotent key used for request with different parameters."
+        )
+
+    def test_will_throw_exception_if_same_idempotency_key_is_used_for_two_different_update_requests(
+        self, api
+    ):
+        # given
+        idempotency_key = random_string()
+        credit_req = valid_credit_req()
+        created = api.credits.create(credit_req)
+        update_request_params = {
+            "description": "updated description",
+            "metadata": {"key": "updated value"},
+        }
+
+        # when
+        api.credits.update(
+            created["id"],
+            update_request_params,
+            request_options={"idempotency_key": idempotency_key},
+        )
+        update_request_params["description"] = "other description"
+        exception = self.assert_shift4_exception(
+            api.credits.update,
+            created["id"],
+            update_request_params,
+            request_options={"idempotency_key": idempotency_key},
+        )
+
+        # then
+        assert exception.type == "invalid_request"
+        assert exception.code is None
+        assert (
+            exception.message
+            == "Idempotent key used for request with different parameters."
         )

@@ -13,8 +13,10 @@ class Resource(object):
     def _get(self, path, params=None, url=None):
         return self.__request("GET", path, params=params, url=url)
 
-    def _post(self, path, json=None, url=None):
-        return self.__request("POST", path, json=json, url=url)
+    def _post(self, path, json=None, url=None, request_options=None):
+        return self.__request(
+            "POST", path, json=json, url=url, request_options=request_options
+        )
 
     def _multipart(self, path, params=None, files=None, url=None):
         return self.__request("POST", path, params=params, files=files, url=url)
@@ -23,14 +25,23 @@ class Resource(object):
         return self.__request("DELETE", path, params=params, url=url)
 
     @classmethod
-    def __request(cls, method, path, params=None, json=None, files=None, url=None):
+    def __request(
+        cls,
+        method,
+        path,
+        params=None,
+        json=None,
+        files=None,
+        url=None,
+        request_options=None,
+    ):
         if url is None:
             url = api.api_url.rstrip("/")
         resp = requests.request(
             method,
             url=url + path,
             auth=(api.secret_key, ""),
-            headers=cls.__create_headers(),
+            headers=cls.__create_headers(request_options),
             files=files,
             params=params,
             json=json,
@@ -51,12 +62,14 @@ class Resource(object):
         )
 
     @classmethod
-    def __create_headers(cls):
+    def __create_headers(cls, request_options=None):
         user_agent = "Shift4-Python/%s (Python/%s.%s.%s)" % (
             __version__,
             sys.version_info.major,
             sys.version_info.minor,
             sys.version_info.micro,
         )
-
-        return {"User-Agent": user_agent}
+        headers = {"User-Agent": user_agent}
+        if request_options is not None and "idempotency_key" in request_options:
+            headers["Idempotency-Key"] = request_options["idempotency_key"]
+        return headers

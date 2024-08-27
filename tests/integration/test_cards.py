@@ -86,3 +86,156 @@ class TestCards(TestCase):
             customer1_cards_limit1, [card12]
         )
         self.assert_list_response_contains_exactly_by_id(customer2_cards, [card21])
+
+    def test_will_not_create_duplicate_if_same_idempotency_key_is_used(self, api):
+        # given
+        customer = api.customers.create({"email": random_email()})
+        card_req = {
+            "number": "4242424242424242",
+            "expMonth": "12",
+            "expYear": "2055",
+            "cvc": "123",
+            "cardholderName": (random_string()),
+        }
+        idempotency_key = random_string()
+
+        # when
+        first_call_response = api.cards.create(
+            customer["id"],
+            card_req,
+            request_options={"idempotency_key": idempotency_key},
+        )
+        second_call_response = api.cards.create(
+            customer["id"],
+            card_req,
+            request_options={"idempotency_key": idempotency_key},
+        )
+
+        # then
+        assert first_call_response == second_call_response
+
+    def test_will_create_two_instances_if_different_idempotency_keys_are_used(
+        self, api
+    ):
+        # given
+        customer = api.customers.create({"email": random_email()})
+        card_req = {
+            "number": "4242424242424242",
+            "expMonth": "12",
+            "expYear": "2055",
+            "cvc": "123",
+            "cardholderName": (random_string()),
+        }
+
+        # when
+        first_call_response = api.cards.create(
+            customer["id"],
+            card_req,
+            request_options={"idempotency_key": random_string()},
+        )
+        second_call_response = api.cards.create(
+            customer["id"],
+            card_req,
+            request_options={"idempotency_key": random_string()},
+        )
+
+        # then
+        assert first_call_response != second_call_response
+
+    def test_will_create_two_instances_if_no_idempotency_keys_are_used(self, api):
+        # given
+        customer = api.customers.create({"email": random_email()})
+        card_req = {
+            "number": "4242424242424242",
+            "expMonth": "12",
+            "expYear": "2055",
+            "cvc": "123",
+            "cardholderName": (random_string()),
+        }
+
+        # when
+        first_call_response = api.cards.create(customer["id"], card_req)
+        second_call_response = api.cards.create(customer["id"], card_req)
+
+        # then
+        assert first_call_response != second_call_response
+
+    def test_will_throw_exception_if_same_idempotency_key_is_used_for_two_different_create_requests(
+        self, api
+    ):
+        # given
+        customer = api.customers.create({"email": random_email()})
+        card_req = {
+            "number": "4242424242424242",
+            "expMonth": "12",
+            "expYear": "2055",
+            "cvc": "123",
+            "cardholderName": (random_string()),
+        }
+        idempotency_key = random_string()
+
+        # when
+        api.cards.create(
+            customer["id"],
+            card_req,
+            request_options={"idempotency_key": idempotency_key},
+        )
+        card_req["cvc"] = "042"
+        exception = self.assert_shift4_exception(
+            api.cards.create,
+            customer["id"],
+            card_req,
+            request_options={"idempotency_key": idempotency_key},
+        )
+
+        # then
+        assert exception.type == "invalid_request"
+        assert exception.code is None
+        assert (
+            exception.message
+            == "Idempotent key used for request with different parameters."
+        )
+
+    def test_will_throw_exception_if_same_idempotency_key_is_used_for_two_different_update_requests(
+        self, api
+    ):
+        # given
+        idempotency_key = random_string()
+        customer = api.customers.create({"email": random_email()})
+        created = api.cards.create(customer["id"], valid_card_req())
+
+        update_request = {
+            "expMonth": "05",
+            "expYear": "2055",
+            "cardholderName": "updated cardholderName",
+            "addressCountry": "updated addressCountry",
+            "addressCity": "updated addressCity",
+            "addressState": "updated addressState",
+            "addressZip": "updated addressZip",
+            "addressLine1": "updated addressLine1",
+            "addressLine2": "updated addressLine2",
+        }
+
+        # when
+        api.cards.update(
+            created["customerId"],
+            created["id"],
+            update_request,
+            request_options={"idempotency_key": idempotency_key},
+        )
+        update_request["expMonth"] = "06"
+        exception = self.assert_shift4_exception(
+            api.cards.update,
+            created["customerId"],
+            created["id"],
+            update_request,
+            request_options={"idempotency_key": idempotency_key},
+        )
+
+        # then
+        assert exception.type == "invalid_request"
+        assert exception.code is None
+        assert (
+            exception.message
+            == "Idempotent key used for request with different parameters."
+        )

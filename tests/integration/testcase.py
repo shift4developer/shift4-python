@@ -24,7 +24,8 @@ class TestCase:
         shift4.uploads_url = previous_uploads_url
         shift4.api_url = previous_api_url
 
-    def assert_shift4_exception(self, fun, *args, **kwargs):
+    @staticmethod
+    def assert_shift4_exception(fun, *args, **kwargs):
         try:
             fun(*args, **kwargs)
         except shift4.Shift4Exception as e:
@@ -34,19 +35,22 @@ class TestCase:
         else:
             pytest.fail("Didn't receive exception")
 
-    def assert_card_matches_request(self, card, card_req):
+    @staticmethod
+    def assert_card_matches_request(card, card_req):
         assert card["first6"] == card_req["number"][:6]
         assert card["last4"] == card_req["number"][-4:]
         assert card["expMonth"] == card_req["expMonth"]
         assert card["expYear"] == card_req["expYear"]
         assert card["cardholderName"] == card_req["cardholderName"]
 
-    def assert_list_response_contains_exactly_by_id(self, response, objects):
+    @staticmethod
+    def assert_list_response_contains_exactly_by_id(response, objects):
         response_ids = list(map(lambda o: o["id"], response["list"]))
         object_ids = list(map(lambda o: o["id"], objects))
         assert response_ids == object_ids
 
-    def assertListResponseContainsInAnyOrderById(self, response, objects):
+    @staticmethod
+    def assert_list_response_contains_in_any_order_by_id(response, objects):
         response_ids = list(map(lambda o: o["id"], response["list"]))
         object_ids = list(map(lambda o: o["id"], objects))
         for oid in object_ids:
